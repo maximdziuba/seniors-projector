@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Cooperative Drag-and-Drop Puzzle</title>
+<title>Kooperatives Puzzle</title>
 <style>
     :root {
         --bg-color: #1a1a2e;
-        --board-width: 800px;
-        --board-height: 600px;
+        --board-width: 1200px;
+        --board-height: 900px;
         --cols: 4;
         --rows: 3;
-        --piece-w: 200px;
-        --piece-h: 200px;
+        --piece-w: 300px;
+        --piece-h: 300px;
     }
 
     * {
@@ -38,26 +38,27 @@
         top: 0;
         left: 0;
         width: 100%;
+        height: 100%;
         pointer-events: none;
         z-index: 1000;
-        display: flex;
-        justify-content: center;
     }
 
     #progress {
-        font-size: clamp(24px, 4vw, 36px);
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        font-size: clamp(16px, 2vw, 24px);
         font-weight: bold;
-        margin-top: 20px;
         background: rgba(0, 0, 0, 0.6);
-        padding: 10px 30px;
-        border-radius: 30px;
+        padding: 8px 20px;
+        border-radius: 20px;
         border: 2px solid rgba(255, 255, 255, 0.5);
         box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
 
     #game-wrapper {
-        width: 2000px;
-        height: 1200px;
+        width: 2400px;
+        height: 1600px;
         position: absolute;
         left: 50%;
         top: 50%;
@@ -70,8 +71,8 @@
         width: var(--board-width);
         height: var(--board-height);
         position: absolute;
-        left: 600px; /* (2000-800)/2 */
-        top: 300px;  /* (1200-600)/2 */
+        left: 600px; /* (2400-1200)/2 */
+        top: 350px;  /* (1600-900)/2 */
         outline: 4px dashed rgba(255, 255, 255, 0.2);
         background: rgba(255, 255, 255, 0.03);
         z-index: 1;
@@ -132,7 +133,7 @@
 
     @keyframes glow {
         0% { 
-            box-shadow: 0 0 30px 15px rgba(0,255,0,0.8), inset 0 0 30px 10px rgba(0,255,0,0.8); 
+            box-shadow: 0 0 40px 20px rgba(0,255,0,0.8), inset 0 0 40px 15px rgba(0,255,0,0.8); 
             border-radius: 12px;
         }
         100% { 
@@ -206,7 +207,7 @@
 <body>
 
 <div id="ui-layer">
-    <div id="progress">Pieces placed: 0 / 12</div>
+    <div id="progress">Teile platziert: 0 / 12</div>
 </div>
 
 <div id="game-wrapper">
@@ -217,24 +218,24 @@
 </div>
 
 <div id="celebration">
-    <h1>Puzzle Complete!<br>Great teamwork!</h1>
-    <button id="play-again-btn">Play Again</button>
+    <h1>Puzzle komplett!<br>Tolles Teamwork!</h1>
+    <button id="play-again-btn">Nochmal spielen</button>
 </div>
 
 <script>
     const ROWS = 3;
     const COLS = 4;
-    const PIECE_W = 200;
-    const PIECE_H = 200;
+    const PIECE_W = 300;
+    const PIECE_H = 300;
     const TOTAL_PIECES = ROWS * COLS;
     
-    // Virtual logical boundaries
-    const LOGICAL_W = 2000;
-    const LOGICAL_H = 1200;
+    // Virtual logical boundaries for 2400x1600 logical canvas
+    const LOGICAL_W = 2400;
+    const LOGICAL_H = 1600;
     const BOARD_LEFT = 600;
-    const BOARD_TOP = 300;
-    const BOARD_RIGHT = 1400;
-    const BOARD_BOTTOM = 900;
+    const BOARD_TOP = 350;
+    const BOARD_RIGHT = 1800;
+    const BOARD_BOTTOM = 1250;
     
     let scale = 1;
     
@@ -249,7 +250,7 @@
 
     // Create the sunny park scene completely from CSS/SVG
     const svgContent = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
       <rect width="800" height="600" fill="#4B9CD3"/>
       <circle cx="150" cy="150" r="90" fill="#FFD700"/>
       <circle cx="300" cy="100" r="40" fill="#FFF" opacity="0.9"/>
@@ -368,7 +369,7 @@
     }
     
     function updateProgress() {
-        progressText.textContent = `Pieces placed: ${piecesPlaced} / 12`;
+        progressText.textContent = `Teile platziert: ${piecesPlaced} / 12`;
         if (piecesPlaced === TOTAL_PIECES) {
             setTimeout(showCelebration, 800);
         }
@@ -458,7 +459,7 @@
         
         const dist = Math.hypot(targetX - currentX, targetY - currentY);
         
-        if (dist < 40) { 
+        if (dist < 60) { // Increased Snap Zone for bigger pieces
             piece.style.transform = `translate(${targetX}px, ${targetY}px)`;
             piece.dataset.x = targetX;
             piece.dataset.y = targetY;

@@ -298,7 +298,6 @@
         boardGrid.innerHTML = '';
         pieces = [];
         piecesPlaced = 0;
-        updateProgress();
         celebration.classList.remove('visible');
         
         document.querySelectorAll('.confetti').forEach(c => c.remove());
@@ -334,6 +333,27 @@
         }
         
         piecesContainer.offsetHeight; 
+
+        // Randomly pre-place 40% of the pieces to make the puzzle easier
+        const prePlaceCount = Math.round(TOTAL_PIECES * 0.4);
+        let indices = Array.from({length: TOTAL_PIECES}, (_, i) => i);
+        indices.sort(() => Math.random() - 0.5);
+        const prePlacedIndices = new Set(indices.slice(0, prePlaceCount));
+        
+        pieces.forEach((piece, index) => {
+            if (prePlacedIndices.has(index)) {
+                const targetX = piece.dataset.targetX;
+                const targetY = piece.dataset.targetY;
+                piece.style.transform = `translate(${targetX}px, ${targetY}px)`;
+                piece.dataset.x = targetX;
+                piece.dataset.y = targetY;
+                piece.dataset.placed = "true";
+                piece.classList.add('placed');
+                piecesPlaced++;
+            }
+        });
+
+        updateProgress();
         scatterPieces();
     }
     
@@ -342,6 +362,8 @@
         edges.sort(() => Math.random() - 0.5);
         
         pieces.forEach((piece, index) => {
+            if (piece.dataset.placed === "true") return; // Skip already placed pieces
+
             let edge = edges[index];
             let x, y;
             

@@ -30,7 +30,7 @@
         font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         overflow: hidden;
         color: white;
-        touch-action: none; /* Crucial for multi-touch dragging without scrolling */
+        touch-action: none;
     }
 
     #ui-layer {
@@ -38,32 +38,40 @@
         top: 0;
         left: 0;
         width: 100%;
-        height: 100%;
         pointer-events: none;
         z-index: 1000;
         display: flex;
-        flex-direction: column;
-        align-items: center;
+        justify-content: center;
     }
 
     #progress {
-        font-size: 36px;
+        font-size: clamp(24px, 4vw, 36px);
         font-weight: bold;
-        margin-top: 30px;
+        margin-top: 20px;
         background: rgba(0, 0, 0, 0.6);
-        padding: 15px 40px;
+        padding: 10px 30px;
         border-radius: 30px;
         border: 2px solid rgba(255, 255, 255, 0.5);
         box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    #game-wrapper {
+        width: 2000px;
+        height: 1200px;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%) scale(var(--scale, 1));
+        transform-origin: center center;
+        pointer-events: none;
     }
 
     #board {
         width: var(--board-width);
         height: var(--board-height);
         position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
+        left: 600px; /* (2000-800)/2 */
+        top: 300px;  /* (1200-600)/2 */
         outline: 4px dashed rgba(255, 255, 255, 0.2);
         background: rgba(255, 255, 255, 0.03);
         z-index: 1;
@@ -90,7 +98,7 @@
         width: 100%;
         height: 100%;
         z-index: 10;
-        pointer-events: none; /* Let pointer events fall through to pieces */
+        pointer-events: none;
     }
 
     .piece {
@@ -102,17 +110,16 @@
         background-image: var(--puzzle-bg);
         background-size: var(--board-width) var(--board-height);
         cursor: grab;
-        /* Simulated border using inset shadow to keep background perfectly sized */
         box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 0 0 3px rgba(255,255,255,0.8);
         border-radius: 12px;
         transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         touch-action: none;
-        pointer-events: auto; /* Enable interaction for pieces */
+        pointer-events: auto;
     }
 
     .piece.dragging {
         cursor: grabbing;
-        transition: none; /* Instant follow when dragging */
+        transition: none;
         box-shadow: 0 20px 40px rgba(0,0,0,0.8), inset 0 0 0 4px #00ff00;
     }
 
@@ -154,16 +161,17 @@
     }
 
     #celebration h1 {
-        font-size: 72px;
+        font-size: clamp(40px, 8vw, 72px);
         color: #FFD700;
         text-shadow: 0 6px 15px rgba(0,0,0,0.8);
         margin-bottom: 40px;
         text-align: center;
         line-height: 1.2;
+        padding: 0 20px;
     }
 
     button {
-        font-size: 36px;
+        font-size: clamp(24px, 4vw, 36px);
         padding: 20px 50px;
         background-color: #32CD32;
         color: white;
@@ -201,11 +209,12 @@
     <div id="progress">Pieces placed: 0 / 12</div>
 </div>
 
-<div id="board">
-    <div class="board-grid" id="board-grid"></div>
+<div id="game-wrapper">
+    <div id="board">
+        <div class="board-grid" id="board-grid"></div>
+    </div>
+    <div id="pieces-container"></div>
 </div>
-
-<div id="pieces-container"></div>
 
 <div id="celebration">
     <h1>Puzzle Complete!<br>Great teamwork!</h1>
@@ -219,30 +228,42 @@
     const PIECE_H = 200;
     const TOTAL_PIECES = ROWS * COLS;
     
+    // Virtual logical boundaries
+    const LOGICAL_W = 2000;
+    const LOGICAL_H = 1200;
+    const BOARD_LEFT = 600;
+    const BOARD_TOP = 300;
+    const BOARD_RIGHT = 1400;
+    const BOARD_BOTTOM = 900;
+    
+    let scale = 1;
+    
+    function updateScale() {
+        const scaleX = window.innerWidth / LOGICAL_W;
+        const scaleY = window.innerHeight / LOGICAL_H;
+        scale = Math.min(scaleX, scaleY);
+        document.documentElement.style.setProperty('--scale', scale);
+    }
+    window.addEventListener('resize', updateScale);
+    updateScale();
+
     // Create the sunny park scene completely from CSS/SVG
     const svgContent = `
     <svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
-      <!-- Sky -->
       <rect width="800" height="600" fill="#4B9CD3"/>
-      <!-- Sun -->
       <circle cx="150" cy="150" r="90" fill="#FFD700"/>
-      <!-- Clouds -->
       <circle cx="300" cy="100" r="40" fill="#FFF" opacity="0.9"/>
       <circle cx="350" cy="120" r="50" fill="#FFF" opacity="0.9"/>
       <circle cx="400" cy="90" r="45" fill="#FFF" opacity="0.9"/>
       <circle cx="600" cy="150" r="40" fill="#FFF" opacity="0.9"/>
       <circle cx="650" cy="170" r="50" fill="#FFF" opacity="0.9"/>
       <circle cx="700" cy="140" r="45" fill="#FFF" opacity="0.9"/>
-      <!-- Grass -->
       <rect y="350" width="800" height="250" fill="#32CD32"/>
-      <!-- Path -->
       <path d="M 300 600 L 400 350 L 450 350 L 500 600 Z" fill="#DEB887"/>
-      <!-- Tree -->
       <rect x="650" y="250" width="40" height="150" fill="#8B4513"/>
       <circle cx="670" cy="200" r="80" fill="#228B22"/>
       <circle cx="620" cy="240" r="60" fill="#006400"/>
       <circle cx="720" cy="240" r="60" fill="#006400"/>
-      <!-- Flowers -->
       <g transform="translate(150, 450)">
         <circle cx="0" cy="-12" r="15" fill="#FF1493"/><circle cx="-12" cy="0" r="15" fill="#FF1493"/>
         <circle cx="12" cy="0" r="15" fill="#FF1493"/><circle cx="0" cy="12" r="15" fill="#FF1493"/>
@@ -266,7 +287,6 @@
     let piecesPlaced = 0;
     let pieces = [];
     
-    const board = document.getElementById('board');
     const boardGrid = document.getElementById('board-grid');
     const piecesContainer = document.getElementById('pieces-container');
     const progressText = document.getElementById('progress');
@@ -280,18 +300,16 @@
         updateProgress();
         celebration.classList.remove('visible');
         
-        // Cleanup old confetti
         document.querySelectorAll('.confetti').forEach(c => c.remove());
         
-        // Draw grid
         for (let i = 0; i < TOTAL_PIECES; i++) {
             const cell = document.createElement('div');
             cell.className = 'board-cell';
             boardGrid.appendChild(cell);
         }
         
-        const startX = (window.innerWidth - PIECE_W) / 2;
-        const startY = (window.innerHeight - PIECE_H) / 2;
+        const startX = (LOGICAL_W - PIECE_W) / 2;
+        const startY = (LOGICAL_H - PIECE_H) / 2;
 
         for (let r = 0; r < ROWS; r++) {
             for (let c = 0; c < COLS; c++) {
@@ -303,6 +321,8 @@
                 
                 piece.dataset.r = r;
                 piece.dataset.c = c;
+                piece.dataset.targetX = BOARD_LEFT + c * PIECE_W;
+                piece.dataset.targetY = BOARD_TOP + r * PIECE_H;
                 piece.dataset.placed = "false";
                 piece.dataset.x = startX;
                 piece.dataset.y = startY;
@@ -312,29 +332,11 @@
             }
         }
         
-        // Force reflow to ensure the explosion animation works
         piecesContainer.offsetHeight; 
-        
-        updateTargets();
         scatterPieces();
     }
     
-    function updateTargets() {
-        const rect = board.getBoundingClientRect();
-        pieces.forEach(piece => {
-            const r = parseInt(piece.dataset.r);
-            const c = parseInt(piece.dataset.c);
-            piece.dataset.targetX = rect.left + c * PIECE_W;
-            piece.dataset.targetY = rect.top + r * PIECE_H;
-        });
-    }
-    
     function scatterPieces() {
-        const rect = board.getBoundingClientRect();
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-        
-        // Evenly distribute among 4 edges
         let edges = [0,0,0, 1,1,1, 2,2,2, 3,3,3];
         edges.sort(() => Math.random() - 0.5);
         
@@ -343,22 +345,21 @@
             let x, y;
             
             if (edge === 0) { // Top
-                x = Math.random() * (w - PIECE_W);
-                y = Math.random() * Math.max(0, rect.top - PIECE_H / 2);
+                x = Math.random() * (LOGICAL_W - PIECE_W);
+                y = Math.random() * (BOARD_TOP - PIECE_H / 2);
             } else if (edge === 1) { // Right
-                x = Math.max(rect.right - PIECE_W / 2, Math.random() * (w - PIECE_W));
-                y = Math.random() * (h - PIECE_H);
+                x = BOARD_RIGHT - PIECE_W / 2 + Math.random() * (LOGICAL_W - BOARD_RIGHT - PIECE_W / 2);
+                y = Math.random() * (LOGICAL_H - PIECE_H);
             } else if (edge === 2) { // Bottom
-                y = Math.max(rect.bottom - PIECE_H / 2, Math.random() * (h - PIECE_H));
-                x = Math.random() * (w - PIECE_W);
+                y = BOARD_BOTTOM - PIECE_H / 2 + Math.random() * (LOGICAL_H - BOARD_BOTTOM - PIECE_H / 2);
+                x = Math.random() * (LOGICAL_W - PIECE_W);
             } else { // Left
-                x = Math.random() * Math.max(0, rect.left - PIECE_W / 2);
-                y = Math.random() * (h - PIECE_H);
+                x = Math.random() * (BOARD_LEFT - PIECE_W / 2);
+                y = Math.random() * (LOGICAL_H - PIECE_H);
             }
             
-            // Keep pieces on screen and below the progress text
-            x = Math.max(0, Math.min(x, w - PIECE_W));
-            y = Math.max(100, Math.min(y, h - PIECE_H)); 
+            x = Math.max(0, Math.min(x, LOGICAL_W - PIECE_W));
+            y = Math.max(0, Math.min(y, LOGICAL_H - PIECE_H)); 
             
             piece.style.transform = `translate(${x}px, ${y}px)`;
             piece.dataset.x = x;
@@ -388,7 +389,6 @@
             c.style.animationDuration = (Math.random() * 3 + 2) + 's';
             c.style.animationDelay = (Math.random() * 1.5) + 's';
             
-            // Random shapes
             if (Math.random() > 0.5) c.style.borderRadius = '50%';
             
             document.body.appendChild(c);
@@ -406,9 +406,17 @@
             piece.classList.add('dragging');
             piece.setPointerCapture(e.pointerId);
             
-            const rect = piece.getBoundingClientRect();
-            const offsetX = e.clientX - rect.left;
-            const offsetY = e.clientY - rect.top;
+            const wrapper = document.getElementById('game-wrapper');
+            const wrapperRect = wrapper.getBoundingClientRect();
+            
+            const localX = (e.clientX - wrapperRect.left) / scale;
+            const localY = (e.clientY - wrapperRect.top) / scale;
+            
+            const pieceLogicalX = parseFloat(piece.dataset.x);
+            const pieceLogicalY = parseFloat(piece.dataset.y);
+            
+            const offsetX = localX - pieceLogicalX;
+            const offsetY = localY - pieceLogicalY;
             
             activeDrags.set(e.pointerId, { piece, offsetX, offsetY });
             e.preventDefault();
@@ -420,8 +428,15 @@
         if (!drag) return;
         
         const { piece, offsetX, offsetY } = drag;
-        let x = e.clientX - offsetX;
-        let y = e.clientY - offsetY;
+        
+        const wrapper = document.getElementById('game-wrapper');
+        const wrapperRect = wrapper.getBoundingClientRect();
+        
+        const localX = (e.clientX - wrapperRect.left) / scale;
+        const localY = (e.clientY - wrapperRect.top) / scale;
+        
+        let x = localX - offsetX;
+        let y = localY - offsetY;
         
         piece.style.transform = `translate(${x}px, ${y}px)`;
         piece.dataset.x = x;
@@ -443,14 +458,13 @@
         
         const dist = Math.hypot(targetX - currentX, targetY - currentY);
         
-        if (dist < 40) { // Snap Zone
+        if (dist < 40) { 
             piece.style.transform = `translate(${targetX}px, ${targetY}px)`;
             piece.dataset.x = targetX;
             piece.dataset.y = targetY;
             piece.dataset.placed = "true";
             piece.classList.add('placed');
             
-            // Reset animation to trigger it
             piece.style.animation = 'none';
             piece.offsetHeight; 
             piece.style.animation = 'glow 0.8s ease-out forwards';
@@ -465,24 +479,7 @@
     document.addEventListener('pointerup', endDrag);
     document.addEventListener('pointercancel', endDrag);
     
-    window.addEventListener('resize', () => {
-        updateTargets();
-        pieces.forEach(piece => {
-            if (piece.dataset.placed === "true") {
-                const targetX = piece.dataset.targetX;
-                const targetY = piece.dataset.targetY;
-                piece.style.transition = 'none';
-                piece.style.transform = `translate(${targetX}px, ${targetY}px)`;
-                piece.dataset.x = targetX;
-                piece.dataset.y = targetY;
-                setTimeout(() => piece.style.transition = '', 50);
-            }
-        });
-    });
-    
     document.getElementById('play-again-btn').addEventListener('click', initGame);
-    
-    // Prevent default context menus to improve touch experience
     document.addEventListener('contextmenu', e => e.preventDefault());
     
     initGame();

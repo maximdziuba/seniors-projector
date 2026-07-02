@@ -65,6 +65,31 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     }
 
+    #upload-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: clamp(14px, 1.5vw, 20px);
+        font-weight: bold;
+        background: rgba(0, 0, 0, 0.6);
+        padding: 8px 20px;
+        border-radius: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        cursor: pointer;
+        pointer-events: auto;
+        transition: transform 0.2s, background-color 0.2s;
+    }
+
+    #upload-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+    }
+
+    #image-upload {
+        display: none;
+    }
+
     #game-wrapper {
         width: 2400px;
         height: 1600px;
@@ -217,6 +242,8 @@
 
 <div id="ui-layer">
     <div id="progress">Teile platziert: 0 / 12</div>
+    <label for="image-upload" id="upload-btn">Eigenes Bild hochladen</label>
+    <input type="file" id="image-upload" accept="image/*">
 </div>
 
 <div id="game-wrapper">
@@ -514,6 +541,16 @@
     document.getElementById('play-again-btn').addEventListener('click', initGame);
     document.addEventListener('contextmenu', e => e.preventDefault());
     
+    // Handle Custom Image Upload
+    document.getElementById('image-upload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            document.documentElement.style.setProperty('--puzzle-bg', `url("${url}")`);
+            initGame(); // Restart game with new image
+        }
+    });
+
     initGame();
 </script>
 </body>
